@@ -1,0 +1,102 @@
+{
+  "exportedAt": "2026-09-06T06:45:00.000Z",
+  "stores": [
+    {
+      "id": "seed-chromatic", "name": "Chromatic", "region": "twin-cities",
+      "address": "320 E Hennepin Ave, Minneapolis, MN 55414", "rating": 4.5, "visits": 0, "lastVisited": null,
+      "status": "been",
+      "notes": [{ "id": "seed-chromatic-n1", "date": "2026-09-06", "text": "Favorite spot in the Twin Cities. A little pricier but really good." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-brobros", "name": "Bro Bros Closet", "region": "twin-cities",
+      "address": "118 E 26th St, Minneapolis, MN", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "been", "notes": [], "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-finalstop", "name": "Final Stop Vintage", "region": "twin-cities",
+      "address": "2431 Lyndale Ave S, Minneapolis, MN 55405", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "been", "notes": [], "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-buffaloexchange", "name": "Buffalo Exchange", "region": "twin-cities",
+      "address": "247 Snelling Ave S, Saint Paul, MN 55105", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "been", "notes": [], "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-clubhouse", "name": "Clubhouse Market", "region": "twin-cities",
+      "address": "2441 Lyndale Ave S, Minneapolis, MN", "rating": 4.5, "visits": 0, "lastVisited": null,
+      "status": "been",
+      "notes": [{ "id": "seed-clubhouse-n1", "date": "2026-09-06", "text": "Really cool, sick place." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-leisureworld", "name": "Leisure World Vintage", "region": "twin-cities",
+      "address": "Garden Level, 2457 Lyndale Ave S, Minneapolis, MN 55405", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "been",
+      "notes": [{ "id": "seed-leisureworld-n1", "date": "2026-09-06", "text": "Been there a couple times." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-grandpascloset", "name": "Grandpa's Closet", "region": "twin-cities",
+      "address": "2147 University Ave W #105, St. Paul, MN", "rating": 3.5, "visits": 0, "lastVisited": null,
+      "status": "been",
+      "notes": [{ "id": "seed-grandpascloset-n1", "date": "2026-09-06", "text": "Wasn't that good." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-saverstcloud", "name": "Savers", "region": "st-cloud",
+      "address": "3326 W Division St, Saint Cloud, MN 56301", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "been",
+      "notes": [{ "id": "seed-saverstcloud-n1", "date": "2026-09-06", "text": "Decent, not bad." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-backtovintage", "name": "Back to Vintage", "region": "st-cloud",
+      "address": "3807 W St Germain St, St Cloud, MN 56301", "rating": 5, "visits": 0, "lastVisited": null,
+      "status": "been",
+      "notes": [{ "id": "seed-backtovintage-n1", "date": "2026-09-06", "text": "One of Jack's favorite places, period." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-want-ragstock", "name": "Ragstock", "region": "st-cloud",
+      "address": "4201 W Division St Ste 79, Saint Cloud, MN 56301", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "want",
+      "notes": [{ "id": "seed-want-ragstock-n1", "date": "2026-09-06", "text": "Vintage / clothing chain, Crossroads Center area." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-want-goodwillstcloud", "name": "Goodwill (St. Cloud)", "region": "st-cloud",
+      "address": "325 33rd Ave N, Saint Cloud, MN 56303", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "want", "notes": [], "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-want-thriftworks", "name": "ThriftWorks!", "region": "st-cloud",
+      "address": "", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "want",
+      "notes": [{ "id": "seed-want-thriftworks-n1", "date": "2026-09-06", "text": "Nonprofit thrift store run by WACOSA. Well-reviewed — clean, organized, good prices, decent clothing section." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-want-platoscloset", "name": "Plato's Closet", "region": "st-cloud",
+      "address": "2720 W Division St, Saint Cloud, MN 56301", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "want",
+      "notes": [{ "id": "seed-want-platoscloset-n1", "date": "2026-09-06", "text": "Buys/sells trendy resale clothing for teens & young adults, up to 70% off retail." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-want-salvationarmy", "name": "Salvation Army Family Store", "region": "st-cloud",
+      "address": "55 Park Ave S, St Cloud, MN 56301", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "want",
+      "notes": [{ "id": "seed-want-salvationarmy-n1", "date": "2026-09-06", "text": "General clothing thrift & donation center." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    },
+    {
+      "id": "seed-want-barkers", "name": "Barker's More 4 Less", "region": "st-cloud",
+      "address": "100 Roosevelt Rd, Saint Cloud, MN 56301", "rating": 0, "visits": 0, "lastVisited": null,
+      "status": "want",
+      "notes": [{ "id": "seed-want-barkers-n1", "date": "2026-09-06", "text": "Consignment clothing thrift store." }],
+      "purchases": [], "photos": [], "createdAt": "2026-09-06T06:45:00.000Z"
+    }
+  ]
+}

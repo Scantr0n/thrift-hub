@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thrift Hub</title>
+<style>
+  :root {
+    --bg: #0a0806;
+    --panel-bg: rgba(24, 19, 14, 0.72);
+    --panel-border: rgba(255, 255, 255, 0.08);
+    --field-bg: rgba(255, 255, 255, 0.04);
+    --field-border: rgba(255, 255, 255, 0.1);
+    --text: #f6f2ea;
+    --text-dim: #a89f8f;
+    --text-faint: #6b6255;
+
+    --accent-1: #f59e0b;
+    --accent-2: #ef4444;
+    --grad-accent: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+
+    --star: #fbbf24;
+    --star-empty: rgba(255, 255, 255, 0.16);
+
+    --tc-color: #38bdf8;
+    --sc-color: #34d399;
+
+    --danger: #fb7185;
+    --success: #34d399;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { display: flex; flex-direction: column; height: 100%; position: relative; }
+
+  .aurora-blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: 0; will-change: transform; }
+  .aurora-1 { width: 460px; height: 460px; top: -140px; left: -100px; background: radial-gradient(circle, rgba(245, 158, 11, 0.28), transparent 70%); animation: drift1 28s ease-in-out infinite alternate; }
+  .aurora-2 { width: 420px; height: 420px; bottom: -160px; right: 5%; background: radial-gradient(circle, rgba(239, 68, 68, 0.22), transparent 70%); animation: drift2 34s ease-in-out infinite alternate; }
+  .aurora-3 { width: 340px; height: 340px; top: 40%; right: -100px; background: radial-gradient(circle, rgba(52, 211, 153, 0.16), transparent 70%); animation: drift3 24s ease-in-out infinite alternate; }
+  @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(60px, 40px) scale(1.15); } }
+  @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-50px, -30px) scale(1.1); } }
+  @keyframes drift3 { from { transform: translate(0,0) scale(1); } to { transform: translate(-40px, 50px) scale(1.2); } }
+
+  header {
+    padding: 20px 30px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    flex-shrink: 0;
+    background: rgba(10, 8, 6, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: 5;
+    position: relative;
+  }
+  header h1 {
+    font-size: 27px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: var(--grad-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header .subtitle { color: var(--text-dim); font-size: 13px; margin-top: 3px; letter-spacing: 0.01em; }
+
+  .header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+  .view-nav { display: flex; background: var(--field-bg); border: 1px solid var(--panel-border); border-radius: 20px; padding: 4px; gap: 2px; }
+  .nav-btn { background: none; border: none; color: var(--text-dim); font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 18px; cursor: pointer; white-space: nowrap; transition: all 0.15s ease; }
+  .nav-btn:hover:not(.active) { color: var(--text); }
+  .nav-btn.active { background: var(--grad-accent); color: #fff; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3); }
+
+  .backup-controls { display: flex; align-items: center; gap: 8px; }
+  .backup-btn {
+    display: inline-flex; align-items: center;
+    background: var(--field-bg); border: 1px solid var(--panel-border); color: var(--text-dim);
+    font-size: 12px; font-weight: 600; padding: 8px 13px; border-radius: 20px;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s ease;
+  }
+  .backup-btn:hover { border-color: var(--accent-1); color: var(--text); background: rgba(245, 158, 11, 0.1); }
+  .storage-note { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+
+  main { flex: 1; display: flex; min-height: 0; position: relative; overflow: hidden; z-index: 1; }
+
+  #list-container { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  .toolbar { display: flex; align-items: center; gap: 10px; padding: 18px 26px 8px; flex-wrap: wrap; }
+  .toolbar input[type="text"], .toolbar select {
+    background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text);
+    padding: 9px 14px; border-radius: 12px; font-size: 13px; outline: none;
+  }
+  .toolbar input[type="text"] { flex: 1; min-width: 160px; }
+  .toolbar input[type="text"]:focus, .toolbar select:focus { border-color: var(--accent-1); }
+  .add-btn {
+    background: var(--grad-accent); border: none; color: #fff; font-weight: 700; font-size: 13px;
+    padding: 10px 18px; border-radius: 12px; cursor: pointer; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); transition: transform 0.1s ease, box-shadow 0.15s ease;
+  }
+  .add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4); }
+
+  .stats-row { display: flex; gap: 10px; padding: 4px 26px 14px; flex-wrap: wrap; }
+  .stat-pill {
+    background: var(--field-bg); border: 1px solid var(--panel-border); border-radius: 12px;
+    padding: 8px 14px; font-size: 12px; color: var(--text-dim);
+  }
+  .stat-pill b { color: var(--text); font-size: 14px; }
+
+  .card-grid {
+    flex: 1; overflow-y: auto; padding: 6px 26px 26px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;
+    align-content: start;
+  }
+  .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-faint); font-size: 14px; }
+
+  .store-card {
+    background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px;
+    padding: 16px; cursor: pointer; transition: border-color 0.15s ease, transform 0.1s ease;
+    position: relative; display: flex; flex-direction: column; gap: 8px;
+    backdrop-filter: blur(10px);
+  }
+  .store-card:hover { border-color: var(--accent-1); transform: translateY(-2px); }
+  .store-card.selected { border-color: var(--accent-1); box-shadow: 0 0 0 1px var(--accent-1); }
+
+  .rank-badge {
+    position: absolute; top: -8px; left: -8px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--grad-accent); color: #fff; font-size: 12px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .card-thumb {
+    width: 100%; height: 110px; border-radius: 10px; object-fit: cover; background: var(--field-bg);
+    border: 1px solid var(--panel-border);
+  }
+  .card-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--text-faint); }
+  .card-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .card-name { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .region-tag { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 8px; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.03em; }
+  .region-tag.twin-cities { background: rgba(56, 189, 248, 0.15); color: var(--tc-color); }
+  .region-tag.st-cloud { background: rgba(52, 211, 153, 0.15); color: var(--sc-color); }
+
+  .stars { font-size: 15px; letter-spacing: 1px; }
+  .star { display: inline-block; }
+  .star.full { color: var(--star); }
+  .star.empty { color: var(--star-empty); }
+  .star.half { background: linear-gradient(90deg, var(--star) 50%, var(--star-empty) 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stars.interactive .star { cursor: pointer; font-size: 24px; }
+
+  .card-meta-row { display: flex; gap: 10px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+  .card-address { font-size: 11px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-idea-note {
+    font-size: 12px; color: var(--text-dim); line-height: 1.35; font-style: italic;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .mark-visited-btn {
+    width: 100%; margin-top: 22px; background: var(--grad-accent); border: none; color: #fff;
+    font-size: 13px; font-weight: 700; padding: 11px; border-radius: 10px; cursor: pointer;
+  }
+  .mark-visited-btn:hover { opacity: 0.92; }
+
+  aside#panel {
+    width: 420px; flex-shrink: 0; border-left: 1px solid var(--panel-border);
+    background: var(--panel-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    overflow-y: auto; padding: 26px; position: relative; z-index: 2;
+  }
+  .panel-placeholder { color: var(--text-faint); font-size: 14px; text-align: center; margin-top: 80px; padding: 0 20px; }
+
+  .panel-name-input {
+    width: 100%; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text);
+    font-size: 22px; font-weight: 700; padding: 4px 0; outline: none; margin-bottom: 4px;
+  }
+  .panel-name-input:focus { border-bottom-color: var(--accent-1); }
+  .panel-address-input {
+    width: 100%; background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text-dim);
+    font-size: 12px; padding: 7px 10px; border-radius: 8px; outline: none; margin-bottom: 4px;
+  }
+  .panel-address-input:focus { border-color: var(--accent-1); color: var(--text); }
+  .directions-link { font-size: 11px; color: var(--accent-1); text-decoration: none; }
+  .directions-link:hover { text-decoration: underline; }
+
+  .region-select {
+    background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text);
+    font-size: 12px; padding: 6px 10px; border-radius: 8px; outline: none; margin: 6px 0 14px;
+  }
+
+  .panel-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--panel-border); }
+  .panel-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0 0 12px; }
+
+  .visit-row { display: flex; align-items: center; gap: 10px; }
+  .visit-count { font-size: 26px; font-weight: 800; }
+  .visit-btn { background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; }
+  .visit-btn:hover { border-color: var(--accent-1); }
+  .last-visited { font-size: 11px; color: var(--text-faint); margin-left: auto; }
+
+  .note-form, .purchase-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .note-form textarea {
+    background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 50px; outline: none;
+  }
+  .note-form textarea:focus { border-color: var(--accent-1); }
+  .purchase-form-row { display: flex; gap: 6px; }
+  .purchase-form-row input {
+    background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text); border-radius: 8px;
+    padding: 7px 9px; font-size: 12px; outline: none;
+  }
+  .purchase-form-row input:focus { border-color: var(--accent-1); }
+  .pf-date { width: 118px; }
+  .pf-item { flex: 1; }
+  .pf-price { width: 70px; }
+  .small-btn {
+    background: var(--grad-accent); border: none; color: #fff; font-size: 12px; font-weight: 700;
+    padding: 7px 12px; border-radius: 8px; cursor: pointer; align-self: flex-start;
+  }
+  .small-btn:hover { opacity: 0.92; }
+
+  .entry-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+  .entry-item { background: var(--field-bg); border: 1px solid var(--panel-border); border-radius: 10px; padding: 9px 11px; font-size: 12px; position: relative; }
+  .entry-date { color: var(--text-faint); font-size: 10px; margin-bottom: 3px; }
+  .entry-del { position: absolute; top: 7px; right: 8px; background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 13px; line-height: 1; }
+  .entry-del:hover { color: var(--danger); }
+  .purchase-line { display: flex; justify-content: space-between; gap: 8px; }
+  .purchase-price { color: var(--success); font-weight: 700; white-space: nowrap; }
+  .empty-note { color: var(--text-faint); font-size: 12px; font-style: italic; }
+
+  .total-spent { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+  .total-spent b { color: var(--success); }
+
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .photo-thumb-wrap { position: relative; }
+  .photo-thumb { width: 100%; height: 70px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid var(--panel-border); }
+  .photo-del { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff; border: none; font-size: 11px; cursor: pointer; line-height: 1; }
+  .upload-label {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--field-bg); border: 1px dashed var(--field-border);
+    color: var(--text-dim); font-size: 12px; padding: 9px 14px; border-radius: 10px; cursor: pointer; width: 100%; justify-content: center;
+  }
+  .upload-label:hover { border-color: var(--accent-1); color: var(--text); }
+
+  .delete-store-btn {
+    margin-top: 26px; width: 100%; background: rgba(251, 113, 133, 0.1); border: 1px solid rgba(251, 113, 133, 0.3);
+    color: var(--danger); font-size: 12px; font-weight: 700; padding: 10px; border-radius: 10px; cursor: pointer;
+  }
+  .delete-store-btn:hover { background: rgba(251, 113, 133, 0.18); }
+
+  #lightbox {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50;
+    align-items: center; justify-content: center; cursor: zoom-out;
+  }
+  #lightbox.visible { display: flex; }
+  #lightbox img { max-width: 88vw; max-height: 88vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="aurora-blob aurora-1"></div>
+  <div class="aurora-blob aurora-2"></div>
+  <div class="aurora-blob aurora-3"></div>
+
+  <header>
+    <div>
+      <h1>Thrift Hub</h1>
+      <div class="subtitle">Your personal thrift store power rankings</div>
+    </div>
+    <div class="header-right">
+      <div class="view-nav" id="viewNav"></div>
+      <div class="backup-controls">
+        <span class="storage-note" id="storageNote"></span>
+        <button class="backup-btn" onclick="exportBackup()" title="Download a backup file of everything">⬇ Backup</button>
+        <label class="backup-btn" title="Restore from a backup file">
+          ⬆ Restore
+          <input type="file" id="restoreInput" accept="application/json" onchange="importBackup(event)" style="display:none;">
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="list-container">
+      <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="Search stores or addresses..." oninput="handleSearch(this.value)">
+        <select id="sortSelect" onchange="handleSort(this.value)">
+          <option value="rating-desc">Highest rated</option>
+          <option value="rating-asc">Lowest rated</option>
+          <option value="visits-desc">Most visited</option>
+          <option value="recent">Recently visited</option>
+          <option value="added-desc">Recently added</option>
+          <option value="name-asc">Name A-Z</option>
+        </select>
+        <button class="add-btn" id="addStoreBtn" onclick="addStore()">+ Add Store</button>
+      </div>
+      <div class="stats-row" id="statsRow"></div>
+      <div class="card-grid" id="cardGrid"></div>
+    </div>
+    <aside id="panel"></aside>
+  </main>
+</div>
+
+<div id="lightbox" onclick="closeLightbox()"><img id="lightboxImg" src="" alt=""></div>
+
+<script>
+const STORAGE_KEY = 'thriftHubStores_v1';
+const REGIONS = [
+  { id: 'twin-cities', label: 'Twin Cities' },
+  { id: 'st-cloud', label: 'St. Cloud / St. Joe' },
+];
+const REGION_LABEL = Object.fromEntries(REGIONS.map(r => [r.id, r.label]));
+
+function uid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function loadStore(key, seed) {
+  const raw = localStorage.getItem(key);
+  if (raw) {
+    try { return JSON.parse(raw); } catch (e) { console.warn('Bad stored data, using seed.', e); }
+  }
+  return JSON.parse(JSON.stringify(seed));
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+  updateStorageNote();
+}
+
+const SEED_STORES = [
+  {
+    id: 'seed-chromatic', name: 'Chromatic', region: 'twin-cities',
+    address: '320 E Hennepin Ave, Minneapolis, MN 55414', rating: 4.5, visits: 0, lastVisited: null,
+    status: 'been', notes: [{ id: 'seed-chromatic-n1', date: '2026-09-06', text: "Favorite spot in the Twin Cities. A little pricier but really good." }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-brobros', name: "Bro Bros Closet", region: 'twin-cities',
+    address: '118 E 26th St, Minneapolis, MN', rating: 0, visits: 0, lastVisited: null,
+    status: 'been', notes: [], purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-finalstop', name: 'Final Stop Vintage', region: 'twin-cities',
+    address: '2431 Lyndale Ave S, Minneapolis, MN 55405', rating: 0, visits: 0, lastVisited: null,
+    status: 'been', notes: [], purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-buffaloexchange', name: 'Buffalo Exchange', region: 'twin-cities',
+    address: '247 Snelling Ave S, Saint Paul, MN 55105', rating: 0, visits: 0, lastVisited: null,
+    status: 'been', notes: [], purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-clubhouse', name: 'Clubhouse Market', region: 'twin-cities',
+    address: '2441 Lyndale Ave S, Minneapolis, MN', rating: 4.5, visits: 0, lastVisited: null,
+    status: 'been', notes: [{ id: 'seed-clubhouse-n1', date: '2026-09-06', text: 'Really cool, sick place.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-leisureworld', name: 'Leisure World Vintage', region: 'twin-cities',
+    address: 'Garden Level, 2457 Lyndale Ave S, Minneapolis, MN 55405', rating: 0, visits: 0, lastVisited: null,
+    status: 'been', notes: [{ id: 'seed-leisureworld-n1', date: '2026-09-06', text: 'Been there a couple times.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-grandpascloset', name: "Grandpa's Closet", region: 'twin-cities',
+    address: '2147 University Ave W #105, St. Paul, MN', rating: 3.5, visits: 0, lastVisited: null,
+    status: 'been', notes: [{ id: 'seed-grandpascloset-n1', date: '2026-09-06', text: "Wasn't that good." }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-saverstcloud', name: 'Savers', region: 'st-cloud',
+    address: '3326 W Division St, Saint Cloud, MN 56301', rating: 0, visits: 0, lastVisited: null,
+    status: 'been', notes: [{ id: 'seed-saverstcloud-n1', date: '2026-09-06', text: 'Decent, not bad.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-backtovintage', name: 'Back to Vintage', region: 'st-cloud',
+    address: '3807 W St Germain St, St Cloud, MN 56301', rating: 5, visits: 0, lastVisited: null,
+    status: 'been', notes: [{ id: 'seed-backtovintage-n1', date: '2026-09-06', text: "One of Jack's favorite places, period." }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-want-ragstock', name: 'Ragstock', region: 'st-cloud',
+    address: '4201 W Division St Ste 79, Saint Cloud, MN 56301', rating: 0, visits: 0, lastVisited: null,
+    status: 'want', notes: [{ id: 'seed-want-ragstock-n1', date: '2026-09-06', text: 'Vintage / clothing chain, Crossroads Center area.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-want-goodwillstcloud', name: 'Goodwill (St. Cloud)', region: 'st-cloud',
+    address: '325 33rd Ave N, Saint Cloud, MN 56303', rating: 0, visits: 0, lastVisited: null,
+    status: 'want', notes: [], purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-want-thriftworks', name: 'ThriftWorks!', region: 'st-cloud',
+    address: '', rating: 0, visits: 0, lastVisited: null,
+    status: 'want', notes: [{ id: 'seed-want-thriftworks-n1', date: '2026-09-06', text: 'Nonprofit thrift store run by WACOSA. Well-reviewed — clean, organized, good prices, decent clothing section.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-want-platoscloset', name: "Plato's Closet", region: 'st-cloud',
+    address: '2720 W Division St, Saint Cloud, MN 56301', rating: 0, visits: 0, lastVisited: null,
+    status: 'want', notes: [{ id: 'seed-want-platoscloset-n1', date: '2026-09-06', text: 'Buys/sells trendy resale clothing for teens & young adults, up to 70% off retail.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-want-salvationarmy', name: 'Salvation Army Family Store', region: 'st-cloud',
+    address: '55 Park Ave S, St Cloud, MN 56301', rating: 0, visits: 0, lastVisited: null,
+    status: 'want', notes: [{ id: 'seed-want-salvationarmy-n1', date: '2026-09-06', text: 'General clothing thrift & donation center.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+  {
+    id: 'seed-want-barkers', name: "Barker's More 4 Less", region: 'st-cloud',
+    address: '100 Roosevelt Rd, Saint Cloud, MN 56301', rating: 0, visits: 0, lastVisited: null,
+    status: 'want', notes: [{ id: 'seed-want-barkers-n1', date: '2026-09-06', text: 'Consignment clothing thrift store.' }],
+    purchases: [], photos: [], createdAt: '2026-09-06T06:45:00.000Z',
+  },
+];
+
+let DATA = loadStore(STORAGE_KEY, SEED_STORES);
+const STATE = { activeTab: 'twin-cities', selectedId: null, search: '', sort: 'rating-desc' };
+
+// ---- Derived helpers ----
+function findStore(id) { return DATA.find(s => s.id === id); }
+function totalSpent(store) { return (store.purchases || []).reduce((sum, p) => sum + (Number(p.price) || 0), 0); }
+
+function getFiltered() {
+  let list = DATA.slice();
+  if (STATE.activeTab === 'want') {
+    list = list.filter(s => s.status === 'want');
+  } else {
+    list = list.filter(s => (s.status || 'been') === 'been');
+    if (STATE.activeTab !== 'all') list = list.filter(s => s.region === STATE.activeTab);
+  }
+  if (STATE.search.trim()) {
+    const q = STATE.search.trim().toLowerCase();
+    list = list.filter(s => (s.name || '').toLowerCase().includes(q) || (s.address || '').toLowerCase().includes(q));
+  }
+  switch (STATE.sort) {
+    case 'rating-desc': list.sort((a, b) => (b.rating || 0) - (a.rating || 0)); break;
+    case 'rating-asc': list.sort((a, b) => (a.rating || 0) - (b.rating || 0)); break;
+    case 'visits-desc': list.sort((a, b) => (b.visits || 0) - (a.visits || 0)); break;
+    case 'recent': list.sort((a, b) => (b.lastVisited || '').localeCompare(a.lastVisited || '')); break;
+    case 'added-desc': list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')); break;
+    case 'name-asc': list.sort((a, b) => (a.name || '').localeCompare(b.name || '')); break;
+  }
+  return list;
+}
+
+// ---- Rendering ----
+function render() {
+  renderNav();
+  renderStats();
+  renderGrid();
+  renderPanel();
+}
+
+function renderNav() {
+  const tabs = [...REGIONS, { id: 'all', label: 'All Rankings' }, { id: 'want', label: 'Want to Visit' }];
+  document.getElementById('viewNav').innerHTML = tabs.map(t =>
+    `<button class="nav-btn ${STATE.activeTab === t.id ? 'active' : ''}" onclick="switchTab('${t.id}')">${t.label}</button>`
+  ).join('');
+  const addBtn = document.getElementById('addStoreBtn');
+  if (addBtn) addBtn.textContent = STATE.activeTab === 'want' ? '+ Add Idea' : '+ Add Store';
+}
+
+function renderStats() {
+  if (STATE.activeTab === 'want') {
+    const ideas = DATA.filter(s => s.status === 'want');
+    const tc = ideas.filter(s => s.region === 'twin-cities').length;
+    const sc = ideas.filter(s => s.region === 'st-cloud').length;
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-pill"><b>${ideas.length}</b> idea${ideas.length === 1 ? '' : 's'}</div>
+      <div class="stat-pill"><b>${tc}</b> Twin Cities</div>
+      <div class="stat-pill"><b>${sc}</b> St. Cloud area</div>
+    `;
+    return;
+  }
+  const base = (STATE.activeTab === 'all' ? DATA : DATA.filter(s => s.region === STATE.activeTab)).filter(s => (s.status || 'been') === 'been');
+  const count = base.length;
+  const rated = base.filter(x => (x.rating || 0) > 0);
+  const avg = rated.length ? (rated.reduce((s, x) => s + (x.rating || 0), 0) / rated.length).toFixed(1) : '—';
+  const visits = base.reduce((s, x) => s + (x.visits || 0), 0);
+  const spent = base.reduce((s, x) => s + totalSpent(x), 0);
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-pill"><b>${count}</b> store${count === 1 ? '' : 's'}</div>
+    <div class="stat-pill"><b>${avg}</b> avg rating${rated.length ? ` (${rated.length} rated)` : ''}</div>
+    <div class="stat-pill"><b>${visits}</b> total visits</div>
+    <div class="stat-pill"><b>$${spent.toFixed(2)}</b> spent</div>
+  `;
+}
+
+function starsHtml(rating, interactive, storeId) {
+  rating = Number(rating) || 0;
+  let html = `<span class="stars ${interactive ? 'interactive' : ''}">`;
+  for (let i = 1; i <= 5; i++) {
+    let cls = 'empty';
+    if (rating >= i) cls = 'full';
+    else if (rating >= i - 0.5) cls = 'half';
+    const click = interactive ? `onclick="handleStarClick(event, '${storeId}', ${i})"` : '';
+    html += `<span class="star ${cls}" ${click}>★</span>`;
+  }
+  html += '</span>';
+  return html;
+}
+
+function renderGrid() {
+  const list = getFiltered();
+  const grid = document.getElementById('cardGrid');
+  const isWant = STATE.activeTab === 'want';
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state">${isWant ? 'No ideas yet.<br>Hit "+ Add Idea" to start a want-to-visit list.' : 'No thrift stores here yet.<br>Hit "+ Add Store" to start ranking.'}</div>`;
+    return;
+  }
+  grid.innerHTML = list.map((s, idx) => {
+    const thumb = (s.photos && s.photos[0])
+      ? `<img class="card-thumb" src="${s.photos[0].dataUrl}">`
+      : `<div class="card-thumb placeholder">🧵</div>`;
+    if (isWant) {
+      return `
+      <div class="store-card ${STATE.selectedId === s.id ? 'selected' : ''}" onclick="selectStore('${s.id}')">
+        ${thumb}
+        <div class="card-title-row">
+          <div class="card-name">${escapeHtml(s.name || 'Unnamed')}</div>
+          <span class="region-tag ${s.region}">${s.region === 'twin-cities' ? 'TC' : 'STC'}</span>
+        </div>
+        ${s.address ? `<div class="card-address">${escapeHtml(s.address)}</div>` : ''}
+        ${(s.notes && s.notes[0]) ? `<div class="card-idea-note">${escapeHtml(s.notes[0].text)}</div>` : ''}
+      </div>`;
+    }
+    return `
+    <div class="store-card ${STATE.selectedId === s.id ? 'selected' : ''}" onclick="selectStore('${s.id}')">
+      <div class="rank-badge">#${idx + 1}</div>
+      ${thumb}
+      <div class="card-title-row">
+        <div class="card-name">${escapeHtml(s.name || 'Unnamed')}</div>
+        <span class="region-tag ${s.region}">${s.region === 'twin-cities' ? 'TC' : 'STC'}</span>
+      </div>
+      ${starsHtml(s.rating)}
+      ${s.address ? `<div class="card-address">${escapeHtml(s.address)}</div>` : ''}
+      <div class="card-meta-row">
+        <span>${s.visits || 0} visit${(s.visits || 0) === 1 ? '' : 's'}</span>
+        <span>${(s.purchases || []).length} purchase${(s.purchases || []).length === 1 ? '' : 's'}</span>
+        ${totalSpent(s) > 0 ? `<span>$${totalSpent(s).toFixed(2)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPanel() {
+  const panel = document.getElementById('panel');
+  const store = findStore(STATE.selectedId);
+  if (!store) {
+    panel.innerHTML = `<div class="panel-placeholder">👈 Click a card on the left to see its rating, visits, notes and purchases.<br><br>Or hit the button above to add a new one.</div>`;
+    return;
+  }
+  const mapsUrl = store.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}` : null;
+
+  panel.innerHTML = `
+    <input class="panel-name-input" id="nameInput" value="${escapeHtml(store.name)}" placeholder="Store name"
+      oninput="fieldInput('${store.id}','name',this.value)" onblur="render()">
+    <select class="region-select" onchange="fieldChange('${store.id}','region',this.value)">
+      ${REGIONS.map(r => `<option value="${r.id}" ${store.region === r.id ? 'selected' : ''}>${r.label}</option>`).join('')}
+    </select>
+    <input class="panel-address-input" value="${escapeHtml(store.address || '')}" placeholder="Address (optional)"
+      oninput="fieldInput('${store.id}','address',this.value)" onblur="render()">
+    ${mapsUrl ? `<a class="directions-link" href="${mapsUrl}" target="_blank" rel="noopener">📍 Directions</a>` : ''}
+    ${store.status === 'want' ? renderIdeaPanelBody(store) : renderVisitedPanelBody(store)}
+  `;
+}
+
+function renderIdeaPanelBody(store) {
+  return `
+    <div class="panel-section">
+      <h3>Why Visit</h3>
+      <div class="note-form">
+        <textarea id="noteDraft" placeholder="Why it's on the list, what you heard about it..."></textarea>
+        <button class="small-btn" onclick="addNote('${store.id}')">Add Note</button>
+      </div>
+      <div class="entry-list">
+        ${(store.notes || []).length ? store.notes.map(n => `
+          <div class="entry-item">
+            <button class="entry-del" onclick="deleteNote('${store.id}','${n.id}')">✕</button>
+            <div class="entry-date">${n.date}</div>
+            <div>${escapeHtml(n.text)}</div>
+          </div>`).join('') : '<div class="empty-note">No notes yet.</div>'}
+      </div>
+    </div>
+    <button class="mark-visited-btn" onclick="convertToVisited('${store.id}')">✓ Mark as Visited</button>
+    <button class="delete-store-btn" onclick="deleteStore('${store.id}')">Remove Idea</button>
+  `;
+}
+
+function renderVisitedPanelBody(store) {
+  return `
+    <div class="panel-section">
+      <h3>Rating</h3>
+      ${starsHtml(store.rating, true, store.id)}
+    </div>
+
+    <div class="panel-section">
+      <h3>Visits</h3>
+      <div class="visit-row">
+        <button class="visit-btn" onclick="adjustVisits('${store.id}', -1)">−</button>
+        <div class="visit-count">${store.visits || 0}</div>
+        <button class="visit-btn" onclick="adjustVisits('${store.id}', 1)">+</button>
+        <span class="last-visited">${store.lastVisited ? 'Last: ' + store.lastVisited : 'Never logged'}</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Notes</h3>
+      <div class="note-form">
+        <textarea id="noteDraft" placeholder="Thoughts, finds, vibes..."></textarea>
+        <button class="small-btn" onclick="addNote('${store.id}')">Add Note</button>
+      </div>
+      <div class="entry-list">
+        ${(store.notes || []).length ? store.notes.map(n => `
+          <div class="entry-item">
+            <button class="entry-del" onclick="deleteNote('${store.id}','${n.id}')">✕</button>
+            <div class="entry-date">${n.date}</div>
+            <div>${escapeHtml(n.text)}</div>
+          </div>`).join('') : '<div class="empty-note">No notes yet.</div>'}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Purchases</h3>
+      <div class="total-spent">Total spent: <b>$${totalSpent(store).toFixed(2)}</b></div>
+      <div class="purchase-form">
+        <div class="purchase-form-row">
+          <input type="date" class="pf-date" id="pDate" value="${todayISO()}">
+          <input type="text" class="pf-item" id="pItem" placeholder="Item">
+          <input type="number" class="pf-price" id="pPrice" placeholder="$" step="0.01" min="0">
+        </div>
+        <button class="small-btn" onclick="addPurchase('${store.id}')">Add Purchase</button>
+      </div>
+      <div class="entry-list">
+        ${(store.purchases || []).length ? store.purchases.map(p => `
+          <div class="entry-item">
+            <button class="entry-del" onclick="deletePurchase('${store.id}','${p.id}')">✕</button>
+            <div class="entry-date">${p.date}</div>
+            <div class="purchase-line">
+              <span>${escapeHtml(p.item)}</span>
+              <span class="purchase-price">$${Number(p.price || 0).toFixed(2)}</span>
+            </div>
+          </div>`).join('') : '<div class="empty-note">No purchases logged.</div>'}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Photos</h3>
+      <div class="photo-grid">
+        ${(store.photos || []).map(p => `
+          <div class="photo-thumb-wrap">
+            <img class="photo-thumb" src="${p.dataUrl}" onclick="openLightbox('${p.dataUrl}')">
+            <button class="photo-del" onclick="deletePhoto('${store.id}','${p.id}', event)">✕</button>
+          </div>`).join('')}
+      </div>
+      <label class="upload-label">
+        📷 Add Photos
+        <input type="file" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload('${store.id}', this.files); this.value='';">
+      </label>
+    </div>
+
+    <button class="delete-store-btn" onclick="deleteStore('${store.id}')">Delete Store</button>
+  `;
+}
+
+function updateStorageNote() {
+  const bytes = new Blob([JSON.stringify(DATA)]).size;
+  const kb = bytes / 1024;
+  let label;
+  if (kb > 1024) label = (kb / 1024).toFixed(1) + ' MB';
+  else if (kb < 1) label = '< 1 KB';
+  else label = Math.round(kb) + ' KB';
+  const el = document.getElementById('storageNote');
+  if (el) el.textContent = label + ' stored';
+}
+
+// ---- Actions ----
+function switchTab(id) { STATE.activeTab = id; STATE.selectedId = null; render(); }
+function selectStore(id) { STATE.selectedId = STATE.selectedId === id ? null : id; render(); }
+function handleSearch(v) { STATE.search = v; renderGrid(); }
+function handleSort(v) { STATE.sort = v; renderGrid(); }
+
+function addStore() {
+  const isWantTab = STATE.activeTab === 'want';
+  const region = (STATE.activeTab === 'all' || isWantTab) ? 'twin-cities' : STATE.activeTab;
+  const store = {
+    id: uid(), name: isWantTab ? 'New Idea' : 'New Store', region, address: '', rating: 0,
+    visits: 0, lastVisited: null, status: isWantTab ? 'want' : 'been', notes: [], purchases: [], photos: [],
+    createdAt: new Date().toISOString(),
+  };
+  DATA.push(store);
+  STATE.selectedId = store.id;
+  saveData();
+  render();
+  const input = document.getElementById('nameInput');
+  if (input) { input.focus(); input.select(); }
+}
+
+function convertToVisited(id) {
+  const s = findStore(id); if (!s) return;
+  s.status = 'been';
+  s.visits = (s.visits || 0) + 1;
+  s.lastVisited = todayISO();
+  saveData();
+  STATE.activeTab = s.region;
+  render();
+}
+
+function fieldInput(id, field, value) {
+  const s = findStore(id); if (!s) return;
+  s[field] = value; saveData();
+}
+function fieldChange(id, field, value) {
+  const s = findStore(id); if (!s) return;
+  s[field] = value; saveData(); render();
+}
+
+function handleStarClick(e, id, starIndex) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const isLeftHalf = (e.clientX - rect.left) < rect.width / 2;
+  const s = findStore(id); if (!s) return;
+  s.rating = isLeftHalf ? starIndex - 0.5 : starIndex;
+  saveData(); render();
+}
+
+function adjustVisits(id, delta) {
+  const s = findStore(id); if (!s) return;
+  s.visits = Math.max(0, (s.visits || 0) + delta);
+  if (delta > 0) s.lastVisited = todayISO();
+  saveData(); render();
+}
+
+function addNote(id) {
+  const ta = document.getElementById('noteDraft');
+  const text = ta.value.trim();
+  if (!text) return;
+  const s = findStore(id); if (!s) return;
+  s.notes = s.notes || [];
+  s.notes.unshift({ id: uid(), date: todayISO(), text });
+  saveData(); render();
+}
+function deleteNote(id, noteId) {
+  const s = findStore(id); if (!s) return;
+  s.notes = (s.notes || []).filter(n => n.id !== noteId);
+  saveData(); render();
+}
+
+function addPurchase(id) {
+  const date = document.getElementById('pDate').value || todayISO();
+  const item = document.getElementById('pItem').value.trim();
+  const price = document.getElementById('pPrice').value;
+  if (!item) return;
+  const s = findStore(id); if (!s) return;
+  s.purchases = s.purchases || [];
+  s.purchases.unshift({ id: uid(), date, item, price: Number(price) || 0 });
+  saveData(); render();
+}
+function deletePurchase(id, purchaseId) {
+  const s = findStore(id); if (!s) return;
+  s.purchases = (s.purchases || []).filter(p => p.id !== purchaseId);
+  saveData(); render();
+}
+
+function resizeImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; }
+        else if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhotoUpload(id, files) {
+  const s = findStore(id); if (!s) return;
+  s.photos = s.photos || [];
+  for (const file of files) {
+    try {
+      const dataUrl = await resizeImage(file, 900, 0.72);
+      s.photos.push({ id: uid(), dataUrl });
+    } catch (e) { console.warn('Photo processing failed', e); }
+  }
+  saveData(); render();
+}
+function deletePhoto(id, photoId, e) {
+  if (e) e.stopPropagation();
+  const s = findStore(id); if (!s) return;
+  s.photos = (s.photos || []).filter(p => p.id !== photoId);
+  saveData(); render();
+}
+
+function deleteStore(id) {
+  const s = findStore(id); if (!s) return;
+  const msg = s.status === 'want'
+    ? `Remove "${s.name}" from your want-to-visit list?`
+    : `Delete "${s.name}"? This can't be undone (unless you have a backup).`;
+  if (!confirm(msg)) return;
+  DATA = DATA.filter(x => x.id !== id);
+  STATE.selectedId = null;
+  saveData(); render();
+}
+
+function openLightbox(dataUrl) {
+  document.getElementById('lightboxImg').src = dataUrl;
+  document.getElementById('lightbox').classList.add('visible');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('visible'); }
+
+// ---- Backup / restore ----
+function exportBackup() {
+  const backup = { exportedAt: new Date().toISOString(), stores: DATA };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `thrift-hub-backup-${backup.exportedAt.slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const stores = Array.isArray(parsed) ? parsed : parsed.stores;
+      if (!Array.isArray(stores)) throw new Error('bad shape');
+      if (!confirm(`Restore ${stores.length} store(s) from backup? This will replace your current data.`)) return;
+      DATA = stores;
+      STATE.selectedId = null;
+      saveData();
+      render();
+      alert('Restored from backup.');
+    } catch (e) {
+      alert("Couldn't read that file — make sure it's a Thrift Hub backup JSON.");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ---- Init ----
+render();
+updateStorageNote();
+</script>
+</body>
+</html>
